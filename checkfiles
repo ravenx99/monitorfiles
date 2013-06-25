@@ -16,7 +16,7 @@
 # it, since we depend on always comparing to the last good
 # log... logrotate just seems to complicate things
 
-logkeepdays=7
+logkeepdays=2
 
 appname=monitorfiles
 
