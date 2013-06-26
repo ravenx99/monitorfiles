@@ -1,26 +1,21 @@
 #!/bin/bash
 
-# NOTES: I'm starting to think that I should use something more than
-# just a diff of sorted files... large changes in files, such as
-# adding or removing several, could make a mess of reporting.  But
-# maybe at that point it doesn't matter... all you really need to know
-# is that something changed.x
-
 # report on changes to specified files from day to day
+# (ccravens, 2013-06-26)
+
+# BUGS:
+
+# - Currently, an empty exclude file will cause it to fail by 'grep
+#   -v' on an empty string.
 
 # to see all files freely, this probably needs to run as root.  You
 # can run it as an unpriviledged user, but you'll have to verify that
 # the user can read all the necessary paths.
 
-# I'm going to rotate the logs here instead of letting logrotate do
-# it, since we depend on always comparing to the last good
-# log... logrotate just seems to complicate things
-
 logkeepdays=2
 
 appname=monitorfiles
 
-# keep everything in the repo directory
 confdir=/etc/$appname
 logdir=/var/log/$appname
 
@@ -74,18 +69,20 @@ else
 fi
 
 # build exclude pattern...
-# if [[ -f $dirlistdat && -r $dirlistdat ]]; then
-#     dirlist=( $(<$dirlistdat) )
-# else
-#     echo "ERROR: Cannot read $dirlistdat"
-#     exit 110
-# fi
+if [[ -f $excllistdat && -r $excllistdat ]]; then
+    excllist=$(cat $excllistdat |tr '\n' '|')
+    excllist=${excllist%|}
+else
+    echo "ERROR: Cannot read $excllistdat"
+    exit 110
+fi
 
 # take a snapshot of each directory
 for fn in "${dirlist[@]}"; do
     if [[ -r $fn ]]; then
         logfile=$logdir/${fn//\//_}.log
-        find $fn -type f -o -type d |xargs stat -c '%n %a %U:%G %Z %s' >$logfile
+        find $fn -type f -o -type d |grep -vE "($excllist)" \
+            |xargs stat -c '%n %a %U:%G %Z %s' >$logfile
 
         # now compare today's snapshot with the previous snapshot
         lastfile=$(ls -t $logfile-* |head -n1)
