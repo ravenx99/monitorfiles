@@ -81,7 +81,7 @@ fi
 for fn in "${dirlist[@]}"; do
     if [[ -r $fn ]]; then
         logfile=$logdir/${fn//\//_}.log
-        find $fn -type f -o -type d |grep -vE "($excllist)" \
+        find $fn -type f |grep -vE "($excllist)" \
             |xargs stat -c '%n %a %U:%G %Z %s' >$logfile
 
         # now compare today's snapshot with the previous snapshot
