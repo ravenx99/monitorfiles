@@ -12,12 +12,51 @@
 # can run it as an unpriviledged user, but you'll have to verify that
 # the user can read all the necessary paths.
 
+pkgname=monitorfiles
+progname=${0##*/}
+
+#
+# process command line options
+#
+
+args=$(getopt --alternative \
+    --options     '-d::h' \
+    --longoptions 'ignoredirs,keepdays:,confdir:,logdir:,,debug::,help' \
+    --name "$progname" -- "$@")
+
+if [[ $? != 0 ]]; then
+    echo >&2 "Terminating..."
+    exit 1
+fi
+
+eval set -- "$args"
+
+function usage() {
+    echo >&2 "usage: $progname [write your own usage]"
+}
+
+DEBUG=0
+includedirs='-o -type d'
 logkeepdays=2
+confdir=/etc/$pkgname
+logdir=/var/log/$pkgname
 
-appname=monitorfiles
+while [[ $1 != '--' ]]; do
+    case "$1" in
+        --ignoredirs) includedirs=''      ; shift 1 ;;
+        --keepdays)   logkeepdays=$2      ; shift 2 ;;
+        --confdir)    confdir=$2          ; shift 2 ;;
+        --logdir)     logdir=$2           ; shift 2 ;;
+        -d|--debug)   DEBUG=${$2:-$DEBUG} ; shift 2 ;;
+        -h|--help) usage; exit 1;;
+        *) echo "Error processing args after getopt!" ; exit 1 ;;
+    esac
+done
+shift; # clean up the -- in $1
 
-confdir=/etc/$appname
-logdir=/var/log/$appname
+#
+# end command line options
+#
 
 # use a timestamp with minutes so we can run multiple times a day if
 # we want; do this here so that we get the same time across all logs
@@ -81,7 +120,7 @@ fi
 for fn in "${dirlist[@]}"; do
     if [[ -r $fn ]]; then
         logfile=$logdir/${fn//\//_}.log
-        find $fn -type f |grep -vE "($excllist)" \
+        find $fn -type f $includedirs |grep -vE "($excllist)" \
             |xargs stat -c '%n %a %U:%G %Z %s' >$logfile
 
         # now compare today's snapshot with the previous snapshot
@@ -100,4 +139,4 @@ find $logdir -name '*.log-*' -mtime +$logkeepdays -daystart \
     |xargs --no-run-if-empty rm
 
 exit
- 
+
