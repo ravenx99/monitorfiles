@@ -1,3 +1,9 @@
+log
+test
 *.dat
 *.conf
-log
+*~
+*.bak
+*.bk
+*.tmp
+
