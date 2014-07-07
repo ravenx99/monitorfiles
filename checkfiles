@@ -125,7 +125,7 @@ for fn in "${dirlist[@]}"; do
 
         # now compare today's snapshot with the previous snapshot
         lastfile=$(ls -t $logfile-* |head -n1)
-        diff $lastfile $logfile
+        diff $lastfile $logfile |cat -n -
         mv $logfile $logfile-$timestamp
     else
         echo "WARNING: Cannot open $fn" >&2
